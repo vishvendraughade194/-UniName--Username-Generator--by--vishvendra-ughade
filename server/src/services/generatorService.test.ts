@@ -17,18 +17,13 @@ describe('generateUsernames', () => {
     const out = generateUsernames({ name: 'Beta User', birthDate: '1999-01-01', word: 'beta', count: 10, avoidNumbers: true, avoidUnderscore: true });
     expect(out.every(u => !/[0-9_]/.test(u))).toBe(true);
   });
-});
 
-import { describe, it, expect } from 'vitest';
-import { generateUsernames } from './generatorService';
-
-describe('generateUsernames', () => {
   it('returns at least one username for minimal input', () => {
     const out = generateUsernames({ name: 'Test User', birthDate: '', count: 5 });
     expect(out.length).toBeGreaterThan(0);
   });
 
-  it('respects maxLength and filters', () => {
+  it('respects maxLength and filters (no underscore)', () => {
     const out = generateUsernames({ name: 'Alpha Beta', birthDate: '2000-01-02', word: 'gamma', count: 10, maxLength: 12, avoidUnderscore: true });
     expect(out.every(u => u.length <= 12)).toBe(true);
     expect(out.some(u => u.includes('_'))).toBe(false);
