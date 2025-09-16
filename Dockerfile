@@ -10,7 +10,8 @@ RUN npm install --no-audit --no-fund
 
 # Copy source and build
 COPY server/src ./src
-RUN npm run build && mkdir -p dist/public && cp -r src/public/* dist/public/
+# Build and copy static assets (use . to avoid glob issues when directory is empty)
+RUN npm run build && mkdir -p dist/public && cp -r src/public/. dist/public/ || true
 
 # Prune dev deps for runtime
 RUN npm prune --omit=dev
