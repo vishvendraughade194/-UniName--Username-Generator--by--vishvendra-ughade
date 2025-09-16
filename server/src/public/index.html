@@ -7,24 +7,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-      :root { --bg: #0b0f17; --card: #121826; --accent: #6ee7b7; --accent2: #60a5fa; --text:#e5e7eb; --muted:#9ca3af; }
+      :root { --bg: #0b0f17; --card: #121826; --accent: #6ee7b7; --accent2: #60a5fa; --text:#e5e7eb; --muted:#9ca3af; --danger:#ef4444; --success:#22c55e }
       *{ box-sizing:border-box }
       body{ margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: radial-gradient(1200px 600px at 10% -10%, rgba(96,165,250,.2), transparent), radial-gradient(1000px 500px at 90% 10%, rgba(110,231,183,.15), transparent), var(--bg); color:var(--text) }
       header{ padding:32px 20px; text-align:center }
       .logo{ font-weight:800; font-size:28px; letter-spacing:.5px }
-      .grid{ display:grid; grid-template-columns: 1fr; gap:18px; max-width:1000px; margin:0 auto; padding:0 20px 40px }
-      @media(min-width:900px){ .grid{ grid-template-columns: 420px 1fr } }
-      .card{ background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); border-radius:16px; padding:20px }
+      .grid{ display:grid; grid-template-columns: 1fr; gap:18px; max-width:1100px; margin:0 auto; padding:0 20px 40px }
+      @media(min-width:1050px){ .grid{ grid-template-columns: 460px 1fr } }
+      .card{ background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); border-radius:16px; padding:20px; transition: transform .2s ease }
+      .card:hover{ transform: translateY(-2px) }
       label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
       input, select{ width:100%; padding:12px 14px; border-radius:10px; background:#0f1623; border:1px solid rgba(255,255,255,.08); color:var(--text); outline:none }
       .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
-      button.primary{ width:100%; padding:14px 16px; border:none; border-radius:12px; color:#031316; background:linear-gradient(90deg, var(--accent), var(--accent2)); font-weight:700; letter-spacing:.3px; cursor:pointer }
+      button.primary{ width:100%; padding:14px 16px; border:none; border-radius:12px; color:#031316; background:linear-gradient(90deg, var(--accent), var(--accent2)); font-weight:700; letter-spacing:.3px; cursor:pointer; transition: opacity .2s ease }
+      button.primary:disabled{ opacity:.6; cursor:not-allowed }
       button.ghost{ padding:10px 12px; border:1px solid rgba(255,255,255,.12); background:transparent; color:var(--text); border-radius:10px; cursor:pointer }
-      .results{ display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px }
-      .chip{ background:#0f1623; border:1px dashed rgba(255,255,255,.15); padding:10px 12px; border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:8px }
+      .results{ display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:12px; min-height:120px }
+      .chip{ background:#0f1623; border:1px solid rgba(255,255,255,.12); padding:10px 12px; border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:8px }
       .chip span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+      .chip .actions{ display:flex; gap:8px }
       .hint{ color:var(--muted); font-size:12px }
       .footer{ text-align:center; color:var(--muted); font-size:12px; padding:24px 0 }
+      .skeleton{ height:40px; border-radius:10px; background: linear-gradient(90deg, #0f1623, #141d2b, #0f1623); background-size:200% 100%; animation: shimmer 1.2s infinite }
+      @keyframes shimmer{ 0%{ background-position:200% 0 } 100%{ background-position:-200% 0 } }
+      .toast{ position:fixed; bottom:16px; right:16px; background:#0f1623; border:1px solid rgba(255,255,255,.15); color:var(--text); padding:12px 14px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.4); display:none }
+      .toast.show{ display:block }
+      .fav-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
+      .fav{ padding:8px 10px; background:#0f1623; border:1px dashed rgba(255,255,255,.15); border-radius:10px }
     </style>
   </head>
   <body>
@@ -88,16 +97,29 @@
       <section class="card">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
           <h2 style="margin:0; font-size:18px">Results</h2>
-          <button class="ghost" id="copyAll">Copy all</button>
+          <div style="display:flex; gap:8px; align-items:center">
+            <button class="ghost" id="copyAll">Copy all</button>
+            <button class="ghost" id="showFavs">Favorites</button>
+          </div>
         </div>
         <div class="results" id="results"></div>
+        <div class="fav-list" id="favList" style="display:none"></div>
       </section>
     </main>
     <div class="footer">Built with local NLP · No external AI calls</div>
 
+    <div class="toast" id="toast"></div>
+
     <script>
       const $ = (id) => document.getElementById(id);
       const results = $('results');
+
+      function toast(msg, type='info'){
+        const t = $('toast');
+        t.textContent = msg; t.className = 'toast show';
+        t.style.borderColor = type === 'error' ? 'var(--danger)' : type === 'success' ? 'var(--success)' : 'rgba(255,255,255,.15)';
+        setTimeout(() => t.className = 'toast', 2200);
+      }
 
       function render(list){
         results.innerHTML = '';
@@ -106,19 +128,44 @@
           div.className = 'chip';
           const span = document.createElement('span');
           span.textContent = u;
-          const btn = document.createElement('button');
-          btn.className = 'ghost';
-          btn.textContent = 'Copy';
-          btn.onclick = () => navigator.clipboard.writeText(u);
+          const actions = document.createElement('div');
+          actions.className = 'actions';
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'ghost'; copyBtn.textContent = 'Copy';
+          copyBtn.onclick = () => { navigator.clipboard.writeText(u); toast('Copied to clipboard','success') };
+          const favBtn = document.createElement('button');
+          favBtn.className = 'ghost'; favBtn.textContent = '★';
+          favBtn.onclick = async () => {
+            try {
+              const name = $('name').value.trim();
+              const birthDate = $('dob').value || '';
+              const word = $('word').value.trim();
+              const res = await fetch('/api/favorites', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, birthDate, word, username: u }) });
+              if (!res.ok) throw new Error('fav failed');
+              toast('Saved to favorites','success');
+            } catch { toast('Favorite failed (DB not configured?)','error') }
+          };
+          actions.appendChild(copyBtn);
+          actions.appendChild(favBtn);
           div.appendChild(span);
-          div.appendChild(btn);
+          div.appendChild(actions);
           results.appendChild(div);
         });
       }
 
+      function renderSkeleton(){
+        results.innerHTML = '';
+        for(let i=0;i<6;i++){
+          const s = document.createElement('div');
+          s.className = 'skeleton';
+          results.appendChild(s);
+        }
+      }
+
       async function generate(){
         const btn = $('generate');
-        btn.disabled = true; btn.textContent = 'Generating…';
+        btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Generating…';
+        renderSkeleton();
         const payload = {
           name: $('name').value.trim(),
           birthDate: $('dob').value || '',
@@ -130,17 +177,17 @@
           avoidUnderscore: $('avoidUnderscore').checked,
         };
         try {
-          const res = await fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+          if (!payload.name && !payload.word) {
+            results.innerHTML = ''; toast('Enter at least a name or a word','error'); return;
+          }
+          const res = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error('bad response');
           const data = await res.json();
           render(data.usernames || []);
         } catch (e){
-          alert('Network error. Please retry.');
+          console.error(e); toast('Server is waking up. Try again.','error'); results.innerHTML='';
         } finally {
-          btn.disabled = false; btn.textContent = 'Generate usernames';
+          btn.disabled = false; btn.textContent = prev;
         }
       }
 
@@ -151,18 +198,32 @@
         const saved = localStorage.getItem('uniname:'+id);
         if (saved !== null) {
           if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = saved === 'true';
-          else (el as any).value = saved;
+          else (el).value = saved;
         }
         el.addEventListener('change', () => {
           if (el instanceof HTMLInputElement && el.type === 'checkbox') localStorage.setItem('uniname:'+id, String(el.checked));
-          else localStorage.setItem('uniname:'+id, (el as any).value);
+          else localStorage.setItem('uniname:'+id, (el).value);
         });
       });
 
       $('generate').onclick = generate;
       $('copyAll').onclick = async () => {
         const names = [...document.querySelectorAll('.chip span')].map(x => x.textContent);
-        if (names.length) await navigator.clipboard.writeText(names.join('\n'));
+        if (names.length) { await navigator.clipboard.writeText(names.join('\n')); toast('All copied','success') }
+      };
+      $('showFavs').onclick = async () => {
+        const box = $('favList');
+        box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        if (box.style.display === 'none') return;
+        try {
+          const res = await fetch('/api/favorites');
+          const data = await res.json();
+          box.innerHTML = '';
+          (data.favorites || []).forEach(f => {
+            const d = document.createElement('div');
+            d.className='fav'; d.textContent = f.username; box.appendChild(d);
+          });
+        } catch { box.innerHTML = '<div class="hint">Favorites unavailable</div>' }
       };
 
       $('randomize').onclick = () => {

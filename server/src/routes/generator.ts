@@ -16,13 +16,33 @@ const inputSchema = z.object({
 });
 
 router.post('/generate', (req, res) => {
-  const parsed = inputSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+  try {
+    const parsed = inputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+    }
+    const { name, birthDate, word, style, count, maxLength, avoidNumbers, avoidUnderscore } = parsed.data;
+    if (!name && !word) {
+      return res.status(400).json({ error: 'Provide at least a name or a word.' });
+    }
+    const usernames = generateUsernames({ name, birthDate, word, style, count, maxLength, avoidNumbers, avoidUnderscore });
+    return res.json({ usernames });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Error in /api/generate', err);
+    return res.status(500).json({ error: 'Server error. Please try again.' });
   }
-  const { name, birthDate, word, style, count, maxLength, avoidNumbers, avoidUnderscore } = parsed.data;
-  const usernames = generateUsernames({ name, birthDate, word, style, count, maxLength, avoidNumbers, avoidUnderscore });
-  res.json({ usernames });
+});
+
+router.get('/test', (_req, res) => {
+  try {
+    const usernames = generateUsernames({ name: 'Ayesha Khan', birthDate: '2001-06-15', word: 'galaxy', style: 'smart', count: 10, maxLength: 24 });
+    return res.json({ usernames });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Error in /api/test', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
 });
 
 

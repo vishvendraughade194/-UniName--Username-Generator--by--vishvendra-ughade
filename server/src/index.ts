@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { json } from 'express';
 import { router as generatorRouter } from './routes/generator';
+import { favoritesRouter } from './routes/favorites';
+import { initDb } from './services/db';
 import path from 'path';
 import fs from 'fs';
 import compression from 'compression';
@@ -80,6 +82,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api', generatorRouter);
+app.use('/api', favoritesRouter);
 
 app.get('*', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -87,6 +90,8 @@ app.get('*', (_req, res) => {
   res.setHeader('Expires', '0');
   res.sendFile(path.join(publicDir, 'index.html'));
 });
+
+initDb().catch((e) => console.error('DB init error', e));
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
