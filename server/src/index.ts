@@ -38,11 +38,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Resolve public directory for both dev (ts-node) and prod (dist)
-const cwd = process.cwd();
-const distPublic = path.join(cwd, 'server', 'dist', 'public');
-const srcPublic = path.join(cwd, 'server', 'src', 'public');
-const publicDir = fs.existsSync(distPublic) ? distPublic : srcPublic;
+// Resolve public directory for both dev (src) and prod (dist)
+// In dev (__dirname => server/src), in prod (__dirname => server/dist)
+const candidatePublic = path.join(__dirname, 'public');
+const fallbackPublic = path.join(process.cwd(), 'server', 'src', 'public');
+const publicDir = fs.existsSync(candidatePublic) ? candidatePublic : fallbackPublic;
 app.use(express.static(publicDir));
 
 app.get('/api/health', (_req, res) => {
