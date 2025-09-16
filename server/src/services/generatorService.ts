@@ -30,9 +30,10 @@ function normalize(input: string): string {
 function extractMeaningfulWords(text: string): string[] {
   const normalized = normalize(text);
   const tokens: string[] = tokenizer.tokenize(normalized.toLowerCase()) as unknown as string[];
-  const withoutStops = tokens.filter((t: string) => !DEFAULT_STOPWORDS.has(t));
-  const stemmed = withoutStops.map((t: string) => natural.PorterStemmer.stem(t));
-  return Array.from(new Set<string>(stemmed)).filter((t: string) => t.length >= 2);
+  const withoutStops: string[] = tokens.filter((t: string) => !DEFAULT_STOPWORDS.has(t));
+  const stemmed: string[] = withoutStops.map((t: string) => String(natural.PorterStemmer.stem(t)));
+  const uniqueStemmed: string[] = [...new Set<string>(stemmed)];
+  return uniqueStemmed.filter((t: string) => t.length >= 2);
 }
 
 function nameVariants(name: string): string[] {
