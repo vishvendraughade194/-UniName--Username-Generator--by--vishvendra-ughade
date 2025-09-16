@@ -20,7 +20,7 @@ Open `http://localhost:3001` and use the UI.
 POST `/api/generate`
 ```json
 {
-  "name": "Ayesha Khan",
+  "name": "naina pandole",
   "birthDate": "2001-06-15",
   "word": "galaxy",
   "style": "smart",
@@ -43,3 +43,22 @@ Alternatively, build and run locally with Docker:
 docker build -t uniname .
 docker run -p 3001:3001 uniname
 ```
+
+## Configuration
+
+- FRONTEND_ORIGIN (optional, recommended): Restrict CORS to your public site origin.
+  - Example: `https://uniname-username-generator-by-vishvendra.onrender.com`
+  - Set in Render → Service → Environment → Add Environment Variable.
+  - If not set, CORS defaults to permissive mode for development.
+
+## CI & Tests
+
+- Unit tests: Vitest. Run locally:
+```
+cd server
+npm install
+npm test
+```
+- Continuous Integration: GitHub Actions workflow at `.github/workflows/ci.yml` runs on push/PR:
+  - Install deps, `npm run typecheck`, and `npm test` in `server/`.
+
