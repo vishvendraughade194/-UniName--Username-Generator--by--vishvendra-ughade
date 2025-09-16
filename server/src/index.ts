@@ -67,11 +67,13 @@ app.use((req, res, next) => {
 });
 
 // Resolve public directory for both dev (src) and prod (dist)
-// In dev (__dirname => server/src), in prod (__dirname => server/dist)
-const candidatePublic = path.join(__dirname, 'public');
-// In Docker runtime, cwd is /app/server, so fallback should be ./src/public (not ./server/src/public)
-const fallbackPublic = path.join(process.cwd(), 'src', 'public');
-const publicDir = fs.existsSync(candidatePublic) ? candidatePublic : fallbackPublic;
+// In prod: __dirname = /app/server/dist → prefer dist/public
+// In dev:  __dirname = <repo>/server/src → fallback to src/public
+const distPublic = path.resolve(__dirname, 'public');
+const srcPublic = path.resolve(process.cwd(), 'src', 'public');
+const publicDir = fs.existsSync(distPublic) ? distPublic : srcPublic;
+// eslint-disable-next-line no-console
+console.log('Serving static from:', publicDir);
 app.use(express.static(publicDir, {
   etag: true,
   lastModified: true,
@@ -101,7 +103,11 @@ app.get('*', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  res.sendFile(path.join(publicDir, 'index.html'));
+  const indexPath = path.join(publicDir, 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    return res.status(500).send('UI not found. Please redeploy with cleared cache.');
+  }
+  res.sendFile(indexPath);
 });
 
 initDb().catch((e) => console.error('DB init error', e));
