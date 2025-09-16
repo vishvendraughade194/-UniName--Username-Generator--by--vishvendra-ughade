@@ -1,7 +1,10 @@
 import { nanoid } from 'nanoid';
 import nlp from 'compromise';
 import natural from 'natural';
-import stopword from 'stopword';
+// Local English stopword list to avoid external dependency resolution issues
+const DEFAULT_STOPWORDS = new Set([
+  'a','an','the','and','or','but','if','then','else','when','at','by','for','in','of','on','to','up','with','as','is','it','its','be','am','are','was','were','been','being','do','does','did','doing','have','has','had','having','i','me','my','myself','we','our','ours','ourselves','you','your','yours','yourself','yourselves','he','him','his','himself','she','her','hers','herself','they','them','their','theirs','themselves','this','that','these','those','there','here','from'
+]);
 
 type GenerateParams = {
   name: string;
@@ -27,7 +30,7 @@ function normalize(input: string): string {
 function extractMeaningfulWords(text: string): string[] {
   const normalized = normalize(text);
   const tokens = tokenizer.tokenize(normalized.toLowerCase());
-  const withoutStops = stopword.removeStopwords(tokens);
+  const withoutStops = tokens.filter((t) => !DEFAULT_STOPWORDS.has(t));
   const stemmed = withoutStops.map((t) => natural.PorterStemmer.stem(t));
   return Array.from(new Set(stemmed)).filter((t) => t.length >= 2);
 }
