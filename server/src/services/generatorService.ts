@@ -17,7 +17,12 @@ type GenerateParams = {
   avoidUnderscore?: boolean;
 };
 
-const tokenizer = new natural.WordTokenizer();
+let tokenizer: { tokenize: (s: string) => string[] };
+try {
+  tokenizer = new (natural as any).WordTokenizer();
+} catch {
+  tokenizer = { tokenize: (s: string) => s.toLowerCase().split(/\s+/g) };
+}
 const memoCache = new Map<string, { at: number; value: string[] }>();
 const MEMO_TTL_MS = 60_000; // 1 minute
 
@@ -31,29 +36,32 @@ function normalize(input: string): string {
 
 function extractMeaningfulWords(text: string): string[] {
   const normalized = normalize(text);
-  const tokens: string[] = tokenizer.tokenize(normalized.toLowerCase()) as unknown as string[];
+  const tokens: string[] = (tokenizer.tokenize(normalized.toLowerCase()) as unknown as string[]) || [];
   const withoutStops: string[] = tokens.filter((t: string) => !DEFAULT_STOPWORDS.has(t));
-  const stemmed: string[] = withoutStops.map((t: string) => String(natural.PorterStemmer.stem(t)));
+  let stemmed: string[];
+  try { stemmed = withoutStops.map((t: string) => String((natural as any).PorterStemmer.stem(t))); }
+  catch { stemmed = withoutStops; }
   const uniqueStemmed: string[] = [...new Set<string>(stemmed)];
   return uniqueStemmed.filter((t: string) => t.length >= 2);
 }
 
 function nameVariants(name: string): string[] {
-  const doc = nlp(name);
-  const given = doc.people().firstNames().out('array') as string[];
-  const last = doc.people().lastNames().out('array') as string[];
-  const tokens = extractMeaningfulWords(name);
-  const initials = tokens.map((t) => t[0]).join('');
-  const combos = [
-    ...given,
-    ...last,
-    tokens.join(''),
-    tokens.join('_'),
-    initials,
-  ]
-    .filter(Boolean)
-    .map((s) => s.toLowerCase());
-  return Array.from(new Set(combos));
+  try {
+    const doc = nlp(name);
+    const given = (doc.people().firstNames().out('array') as string[]) || [];
+    const last = (doc.people().lastNames().out('array') as string[]) || [];
+    const tokens = extractMeaningfulWords(name);
+    const initials = tokens.map((t) => t[0]).join('');
+    const combos = [...given, ...last, tokens.join(''), tokens.join('_'), initials]
+      .filter(Boolean)
+      .map((s) => s.toLowerCase());
+    return Array.from(new Set(combos));
+  } catch {
+    const tokens = extractMeaningfulWords(name);
+    const initials = tokens.map((t) => t[0]).join('');
+    const combos = [tokens.join(''), tokens.join('_'), initials].filter(Boolean).map((s) => s.toLowerCase());
+    return Array.from(new Set(combos.length ? combos : [normalize(name).replace(/\s+/g, '')]));
+  }
 }
 
 function birthDateVariants(birthDate: string): string[] {
