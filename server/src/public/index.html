@@ -8,37 +8,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
       :root { --bg: #0b0f17; --card: #121826; --accent: #6ee7b7; --accent2: #60a5fa; --text:#e5e7eb; --muted:#9ca3af; --danger:#ef4444; --success:#22c55e }
+      :root.light { --bg: #f8fafc; --card: #ffffff; --text:#0f172a; --muted:#475569 }
       *{ box-sizing:border-box }
-      body{ margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: radial-gradient(1200px 600px at 10% -10%, rgba(96,165,250,.2), transparent), radial-gradient(1000px 500px at 90% 10%, rgba(110,231,183,.15), transparent), var(--bg); color:var(--text) }
-      header{ padding:32px 20px; text-align:center }
+      body{ margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: radial-gradient(1200px 600px at 10% -10%, rgba(96,165,250,.2), transparent), radial-gradient(1000px 500px at 90% 10%, rgba(110,231,183,.15), transparent), var(--bg); color:var(--text); transition: background .3s ease, color .3s ease }
+      header{ padding:32px 20px; text-align:center; display:flex; justify-content:center; gap:12px; align-items:center }
       .logo{ font-weight:800; font-size:28px; letter-spacing:.5px }
+      .toggle{ padding:8px 10px; border:1px solid rgba(255,255,255,.15); background:transparent; color:var(--text); border-radius:10px; cursor:pointer }
       .grid{ display:grid; grid-template-columns: 1fr; gap:18px; max-width:1100px; margin:0 auto; padding:0 20px 40px }
       @media(min-width:1050px){ .grid{ grid-template-columns: 460px 1fr } }
       .card{ background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); border-radius:16px; padding:20px; transition: transform .2s ease }
       .card:hover{ transform: translateY(-2px) }
       label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
-      input, select{ width:100%; padding:12px 14px; border-radius:10px; background:#0f1623; border:1px solid rgba(255,255,255,.08); color:var(--text); outline:none }
+      input, select{ width:100%; padding:12px 14px; border-radius:10px; background:#0f1623; border:1px solid rgba(255,255,255,.08); color:var(--text); outline:none; transition: background .2s ease, color .2s ease }
+      :root.light input, :root.light select { background:#f1f5f9; color:#0f172a; border-color:#e2e8f0 }
       .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
       button.primary{ width:100%; padding:14px 16px; border:none; border-radius:12px; color:#031316; background:linear-gradient(90deg, var(--accent), var(--accent2)); font-weight:700; letter-spacing:.3px; cursor:pointer; transition: opacity .2s ease }
       button.primary:disabled{ opacity:.6; cursor:not-allowed }
       button.ghost{ padding:10px 12px; border:1px solid rgba(255,255,255,.12); background:transparent; color:var(--text); border-radius:10px; cursor:pointer }
       .results{ display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:12px; min-height:120px }
-      .chip{ background:#0f1623; border:1px solid rgba(255,255,255,.12); padding:10px 12px; border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:8px }
+      .chip{ background:#0f1623; border:1px solid rgba(255,255,255,.12); padding:10px 12px; border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; animation: pop .2s ease }
+      :root.light .chip{ background:#f1f5f9; border-color:#e2e8f0 }
+      @keyframes pop { from{ transform:scale(.98); opacity:.6 } to{ transform:scale(1); opacity:1 } }
       .chip span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
       .chip .actions{ display:flex; gap:8px }
       .hint{ color:var(--muted); font-size:12px }
       .footer{ text-align:center; color:var(--muted); font-size:12px; padding:24px 0 }
       .skeleton{ height:40px; border-radius:10px; background: linear-gradient(90deg, #0f1623, #141d2b, #0f1623); background-size:200% 100%; animation: shimmer 1.2s infinite }
+      :root.light .skeleton{ background: linear-gradient(90deg, #e2e8f0, #f1f5f9, #e2e8f0) }
       @keyframes shimmer{ 0%{ background-position:200% 0 } 100%{ background-position:-200% 0 } }
       .toast{ position:fixed; bottom:16px; right:16px; background:#0f1623; border:1px solid rgba(255,255,255,.15); color:var(--text); padding:12px 14px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.4); display:none }
+      :root.light .toast{ background:#ffffff; border-color:#e2e8f0 }
       .toast.show{ display:block }
       .fav-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
       .fav{ padding:8px 10px; background:#0f1623; border:1px dashed rgba(255,255,255,.15); border-radius:10px }
+      :root.light .fav{ background:#f8fafc; border-color:#e2e8f0 }
     </style>
   </head>
   <body>
     <header>
       <div class="logo">UniName <span style="color:var(--accent)">●</span> Generator</div>
+      <button class="toggle" id="theme">Toggle theme</button>
     </header>
     <main class="grid">
       <section class="card">
@@ -90,8 +99,8 @@
               <label style="margin:0"><input type="checkbox" id="avoidUnderscore" /> Avoid underscore</label>
             </div>
           </div>
-          <button class="primary" id="generate">Generate usernames</button>
-          <div class="hint">We never send your data to external AI. All NLP is local.</div>
+          <button class="primary" id="generate" title="Press Ctrl+Enter to generate">Generate usernames</button>
+          <div class="hint">Tip: Press Ctrl+Enter to generate quickly.</div>
         </div>
       </section>
       <section class="card">
@@ -121,6 +130,19 @@
         setTimeout(() => t.className = 'toast', 2200);
       }
 
+      function confetti(){
+        const el = document.createElement('div');
+        el.style.position='fixed'; el.style.left='0'; el.style.top='0'; el.style.width='100%'; el.style.height='0'; el.style.pointerEvents='none';
+        for(let i=0;i<120;i++){
+          const s=document.createElement('span');
+          s.style.position='fixed'; s.style.top='0'; s.style.left=Math.random()*100+'%'; s.style.width='6px'; s.style.height='10px'; s.style.background=['#6ee7b7','#60a5fa','#f472b6','#f59e0b'][i%4]; s.style.opacity='.9'; s.style.transform=`translateY(-10px) rotate(${Math.random()*360}deg)`; s.style.borderRadius='2px'; s.style.transition='transform 1.2s ease, opacity 1.2s ease';
+          setTimeout(()=>{ s.style.transform=`translateY(${window.innerHeight+40}px) rotate(${Math.random()*360}deg)`; s.style.opacity='0'; }, 10+i*3);
+          el.appendChild(s);
+        }
+        document.body.appendChild(el);
+        setTimeout(()=>document.body.removeChild(el), 1800);
+      }
+
       function render(list){
         results.innerHTML = '';
         list.forEach(u => {
@@ -132,7 +154,7 @@
           actions.className = 'actions';
           const copyBtn = document.createElement('button');
           copyBtn.className = 'ghost'; copyBtn.textContent = 'Copy';
-          copyBtn.onclick = () => { navigator.clipboard.writeText(u); toast('Copied to clipboard','success') };
+          copyBtn.onclick = () => { navigator.clipboard.writeText(u); toast('Copied','success') };
           const favBtn = document.createElement('button');
           favBtn.className = 'ghost'; favBtn.textContent = '★';
           favBtn.onclick = async () => {
@@ -143,7 +165,7 @@
               const res = await fetch('/api/favorites', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, birthDate, word, username: u }) });
               if (!res.ok) throw new Error('fav failed');
               toast('Saved to favorites','success');
-            } catch { toast('Favorite failed (DB not configured?)','error') }
+            } catch { toast('Favorites unavailable','error') }
           };
           actions.appendChild(copyBtn);
           actions.appendChild(favBtn);
@@ -184,29 +206,13 @@
           avoidUnderscore: $('avoidUnderscore').checked,
         };
         try {
-          if (!payload.name && !payload.word) {
-            results.innerHTML = ''; toast('Enter at least a name or a word','error'); return;
-          }
+          if (!payload.name && !payload.word) { results.innerHTML = ''; toast('Enter a name or a word','error'); return; }
           const res = await fetchWithTimeout('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), timeout: 12000 });
-          if (!res.ok) {
-            const text = await res.text().catch(()=> '');
-            throw new Error(`HTTP ${res.status} ${res.statusText} ${text}`);
-          }
-          let data;
-          const ct = res.headers.get('content-type') || '';
-          if (ct.includes('application/json')) data = await res.json(); else data = { usernames: [] };
-          if (!data || !Array.isArray(data.usernames)) {
-            console.error('Bad payload', data);
-            toast('Unexpected server response','error');
-            results.innerHTML = '';
-            return;
-          }
-          render(data.usernames);
-        } catch (e){
-          console.error(e); toast('Network/server error. Try again.','error'); results.innerHTML='';
-        } finally {
-          btn.disabled = false; btn.textContent = prev;
-        }
+          if (!res.ok) throw new Error('bad response');
+          const data = await res.json();
+          render(data.usernames || []);
+        } catch (e){ console.error(e); toast('Server is waking. Try again.','error'); results.innerHTML=''; }
+        finally { btn.disabled = false; btn.textContent = prev; }
       }
 
       // Persist inputs
@@ -214,48 +220,37 @@
       fields.forEach(id => {
         const el = document.getElementById(id);
         const saved = localStorage.getItem('uniname:'+id);
-        if (saved !== null) {
-          if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = saved === 'true';
-          else (el).value = saved;
-        }
-        el.addEventListener('change', () => {
-          if (el instanceof HTMLInputElement && el.type === 'checkbox') localStorage.setItem('uniname:'+id, String(el.checked));
-          else localStorage.setItem('uniname:'+id, (el).value);
-        });
+        if (saved !== null) { if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = saved === 'true'; else (el).value = saved; }
+        el.addEventListener('change', () => { if (el instanceof HTMLInputElement && el.type === 'checkbox') localStorage.setItem('uniname:'+id, String(el.checked)); else localStorage.setItem('uniname:'+id, (el).value); });
       });
 
       $('generate').onclick = generate;
       $('copyAll').onclick = async () => {
         const names = [...document.querySelectorAll('.chip span')].map(x => x.textContent);
-        if (names.length) { await navigator.clipboard.writeText(names.join('\n')); toast('All copied','success') }
+        if (names.length) { await navigator.clipboard.writeText(names.join('\n')); toast('All copied','success'); confetti(); }
       };
       $('showFavs').onclick = async () => {
         const box = $('favList');
         box.style.display = box.style.display === 'none' ? 'flex' : 'none';
         if (box.style.display === 'none') return;
-        try {
-          const res = await fetch('/api/favorites');
-          const data = await res.json();
-          box.innerHTML = '';
-          (data.favorites || []).forEach(f => {
-            const d = document.createElement('div');
-            d.className='fav'; d.textContent = f.username; box.appendChild(d);
-          });
-        } catch { box.innerHTML = '<div class="hint">Favorites unavailable</div>' }
+        try { const res = await fetch('/api/favorites'); const data = await res.json(); box.innerHTML = ''; (data.favorites || []).forEach(f => { const d = document.createElement('div'); d.className='fav'; d.textContent = f.username; box.appendChild(d); }); }
+        catch { box.innerHTML = '<div class="hint">Favorites unavailable</div>' }
       };
-
       $('randomize').onclick = () => {
-        const samples = [
-          ['Ayesha Khan','2001-06-15','galaxy'],
-          ['Pranav Iyer','1998-12-03','matrix'],
-          ['Fatima Noor','1999-02-28','quantum'],
-          ['Daniel Cho','2004-09-09','nebula']
-        ];
+        const samples = [['Ayesha Khan','2001-06-15','galaxy'],['Pranav Iyer','1998-12-03','matrix'],['Fatima Noor','1999-02-28','quantum'],['Daniel Cho','2004-09-09','nebula']];
         const [n,d,w] = samples[Math.floor(Math.random()*samples.length)];
         $('name').value = n; $('dob').value = d; $('word').value = w;
       };
 
-      // Global error surface to avoid silent failures
+      // Theme toggle
+      const savedTheme = localStorage.getItem('uniname:theme');
+      if (savedTheme === 'light') document.documentElement.classList.add('light');
+      $('theme').onclick = () => { document.documentElement.classList.toggle('light'); localStorage.setItem('uniname:theme', document.documentElement.classList.contains('light') ? 'light' : 'dark'); };
+
+      // Keyboard shortcut: Ctrl+Enter to generate
+      window.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generate(); } });
+
+      // Global error surface
       window.addEventListener('error', (e) => { console.error(e.error || e.message); toast('A script error occurred','error'); });
       window.addEventListener('unhandledrejection', (e) => { console.error(e.reason); toast('A request failed','error'); });
     </script>
