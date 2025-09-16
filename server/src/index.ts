@@ -69,7 +69,8 @@ app.use((req, res, next) => {
 // Resolve public directory for both dev (src) and prod (dist)
 // In dev (__dirname => server/src), in prod (__dirname => server/dist)
 const candidatePublic = path.join(__dirname, 'public');
-const fallbackPublic = path.join(process.cwd(), 'server', 'src', 'public');
+// In Docker runtime, cwd is /app/server, so fallback should be ./src/public (not ./server/src/public)
+const fallbackPublic = path.join(process.cwd(), 'src', 'public');
 const publicDir = fs.existsSync(candidatePublic) ? candidatePublic : fallbackPublic;
 app.use(express.static(publicDir, {
   etag: true,
