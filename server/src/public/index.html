@@ -162,6 +162,13 @@
         }
       }
 
+      function fetchWithTimeout(resource, options = {}){
+        const { timeout = 10000 } = options;
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        return fetch(resource, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
+      }
+
       async function generate(){
         const btn = $('generate');
         btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Generating…';
@@ -180,12 +187,23 @@
           if (!payload.name && !payload.word) {
             results.innerHTML = ''; toast('Enter at least a name or a word','error'); return;
           }
-          const res = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          if (!res.ok) throw new Error('bad response');
-          const data = await res.json();
-          render(data.usernames || []);
+          const res = await fetchWithTimeout('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), timeout: 12000 });
+          if (!res.ok) {
+            const text = await res.text().catch(()=> '');
+            throw new Error(`HTTP ${res.status} ${res.statusText} ${text}`);
+          }
+          let data;
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) data = await res.json(); else data = { usernames: [] };
+          if (!data || !Array.isArray(data.usernames)) {
+            console.error('Bad payload', data);
+            toast('Unexpected server response','error');
+            results.innerHTML = '';
+            return;
+          }
+          render(data.usernames);
         } catch (e){
-          console.error(e); toast('Server is waking up. Try again.','error'); results.innerHTML='';
+          console.error(e); toast('Network/server error. Try again.','error'); results.innerHTML='';
         } finally {
           btn.disabled = false; btn.textContent = prev;
         }
@@ -236,6 +254,10 @@
         const [n,d,w] = samples[Math.floor(Math.random()*samples.length)];
         $('name').value = n; $('dob').value = d; $('word').value = w;
       };
+
+      // Global error surface to avoid silent failures
+      window.addEventListener('error', (e) => { console.error(e.error || e.message); toast('A script error occurred','error'); });
+      window.addEventListener('unhandledrejection', (e) => { console.error(e.reason); toast('A request failed','error'); });
     </script>
   </body>
   </html>
