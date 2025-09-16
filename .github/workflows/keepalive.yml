@@ -1,0 +1,20 @@
+name: Keep Render app warm
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        env:
+          PING_URL: ${{ secrets.PING_URL }}
+        run: |
+          URL="${PING_URL:-https://uniname-username-generator-by-vishvendra.onrender.com/api/health}"
+          echo "Pinging $URL"
+          curl -fsS "$URL" || true
+
+

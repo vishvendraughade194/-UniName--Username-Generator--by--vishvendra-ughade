@@ -18,6 +18,8 @@ type GenerateParams = {
 };
 
 const tokenizer = new natural.WordTokenizer();
+const memoCache = new Map<string, { at: number; value: string[] }>();
+const MEMO_TTL_MS = 60_000; // 1 minute
 
 function normalize(input: string): string {
   return input
@@ -99,6 +101,12 @@ function stylize(base: string, style: string): string[] {
 
 export function generateUsernames(params: GenerateParams): string[] {
   const { name, birthDate, word = '', style = 'smart', count = 10, maxLength = 24, avoidNumbers = false, avoidUnderscore = false } = params;
+  const key = JSON.stringify({ name, birthDate, word, style, count, maxLength, avoidNumbers, avoidUnderscore });
+  const now = Date.now();
+  const hit = memoCache.get(key);
+  if (hit && now - hit.at < MEMO_TTL_MS) {
+    return hit.value;
+  }
   const names = nameVariants(name);
   const dates = birthDateVariants(birthDate);
   const words = wordVariants(word);
@@ -152,7 +160,9 @@ export function generateUsernames(params: GenerateParams): string[] {
     scored = scored.filter((u) => !/_/.test(u));
   }
 
-  return Array.from(new Set(scored)).slice(0, count);
+  const out = Array.from(new Set(scored)).slice(0, count);
+  memoCache.set(key, { at: now, value: out });
+  return out;
 }
 
 

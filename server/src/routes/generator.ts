@@ -6,7 +6,7 @@ export const router = Router();
 
 const inputSchema = z.object({
   name: z.string().min(1),
-  birthDate: z.string().min(1),
+  birthDate: z.string().optional().default(''),
   word: z.string().optional().default(''),
   style: z.string().optional().default('smart'),
   count: z.number().int().min(1).max(20).optional().default(10),

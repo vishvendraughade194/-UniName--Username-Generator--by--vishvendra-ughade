@@ -117,6 +117,8 @@
       }
 
       async function generate(){
+        const btn = $('generate');
+        btn.disabled = true; btn.textContent = 'Generating…';
         const payload = {
           name: $('name').value.trim(),
           birthDate: $('dob').value || '',
@@ -127,13 +129,19 @@
           avoidNumbers: $('avoidNumbers').checked,
           avoidUnderscore: $('avoidUnderscore').checked,
         };
-        const res = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        render(data.usernames || []);
+        try {
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          render(data.usernames || []);
+        } catch (e){
+          alert('Network error. Please retry.');
+        } finally {
+          btn.disabled = false; btn.textContent = 'Generate usernames';
+        }
       }
 
       // Persist inputs
