@@ -2,9 +2,9 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install server dependencies
-COPY server/package.json server/package-lock.json* server/tsconfig.json ./server/
-RUN cd server && npm ci --no-audit --no-fund
+# Install server dependencies (works with or without lockfile)
+COPY server/package*.json server/tsconfig.json ./server/
+RUN cd server && if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 
 # Copy source
 COPY server/src ./server/src
