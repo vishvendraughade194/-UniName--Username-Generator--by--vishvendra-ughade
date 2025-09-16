@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { json } from 'express';
 import { router as generatorRouter } from './routes/generator';
 import { favoritesRouter } from './routes/favorites';
@@ -14,6 +15,12 @@ const PORT = process.env.PORT || 3001;
 // Use strong ETags for better client caching validation
 app.set('etag', 'strong');
 
+// Add request IDs
+app.use((req, _res, next) => {
+  (req as any).id = Math.random().toString(36).slice(2, 10);
+  next();
+});
+
 // Lightweight logger: only log API routes (skip static/health) and reduce noise in production
 app.use((req, res, next) => {
   const isApi = req.url.startsWith('/api/');
@@ -21,14 +28,19 @@ app.use((req, res, next) => {
   const shouldLog = isApi && !isHealth && process.env.NODE_ENV !== 'test';
   if (!shouldLog) return next();
   const start = Date.now();
-  console.log(`[API] ${req.method} ${req.url}`);
+  console.log(`[API] ${req.method} ${req.url} id=${(req as any).id}`);
   res.on('finish', () => {
-    console.log(`[API] ${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`);
+    console.log(`[API] ${req.method} ${req.url} id=${(req as any).id} ${res.statusCode} ${Date.now() - start}ms`);
   });
   next();
 });
 
-app.use(cors());
+// Security headers
+app.use(helmet());
+
+// Tight CORS if ALLOWED_ORIGIN provided, else default
+const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
+app.use(cors({ origin: allowedOrigin === '*' ? undefined : allowedOrigin }));
 app.use(json({ limit: '256kb' }));
 app.use(compression());
 
