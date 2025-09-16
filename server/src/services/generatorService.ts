@@ -109,68 +109,86 @@ function stylize(base: string, style: string): string[] {
 
 export function generateUsernames(params: GenerateParams): string[] {
   const { name, birthDate, word = '', style = 'smart', count = 10, maxLength = 24, avoidNumbers = false, avoidUnderscore = false } = params;
+
   const key = JSON.stringify({ name, birthDate, word, style, count, maxLength, avoidNumbers, avoidUnderscore });
   const now = Date.now();
   const hit = memoCache.get(key);
-  if (hit && now - hit.at < MEMO_TTL_MS) {
-    return hit.value;
-  }
-  const names = nameVariants(name);
-  const dates = birthDateVariants(birthDate);
-  const words = wordVariants(word);
+  if (hit && now - hit.at < MEMO_TTL_MS) return hit.value;
 
-  const bases: string[] = [];
-  for (const n of names) {
-    for (const d of dates) {
-      bases.push(`${n}${d}`);
-      bases.push(`${n}_${d}`);
+  try {
+    const names = nameVariants(name);
+    const dates = birthDateVariants(birthDate);
+    const words = wordVariants(word);
+
+    const bases: string[] = [];
+    for (const n of names) {
+      for (const d of dates) {
+        bases.push(`${n}${d}`);
+        bases.push(`${n}_${d}`);
+      }
+      for (const w of words) {
+        bases.push(`${n}${w}`);
+        bases.push(`${n}_${w}`);
+      }
     }
-    for (const w of words) {
-      bases.push(`${n}${w}`);
-      bases.push(`${n}_${w}`);
+    if (bases.length === 0) bases.push(name.toLowerCase());
+
+    const candidates = new Set<string>();
+    for (const base of bases) {
+      for (const s of stylize(base, style)) {
+        candidates.add(s);
+        candidates.add(`${s}${Math.floor(Math.random() * 999)}`);
+        candidates.add(`${s}_${nanoid(4)}`);
+      }
     }
+
+    let list = Array.from(candidates)
+      .map((u) => u.replace(/__+/g, '_'))
+      .filter((u) => u.length >= 3 && u.length <= maxLength)
+      .slice(0, count * 5);
+
+    const tokens = new Set([...extractMeaningfulWords(name), ...extractMeaningfulWords(word)]);
+    let scored = list
+      .map((u) => {
+        const score =
+          (/[a-z]/.test(u) ? 1 : 0) +
+          (/[0-9]/.test(u) ? 0.2 : 0) +
+          ([...tokens].some((t) => u.includes(t)) ? 1 : 0) +
+          (/_/.test(u) ? 0.1 : 0);
+        return { u, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.u);
+
+    if (avoidNumbers) scored = scored.filter((u) => !/[0-9]/.test(u));
+    if (avoidUnderscore) scored = scored.filter((u) => !/_/.test(u));
+
+    const out = Array.from(new Set(scored)).slice(0, count);
+    memoCache.set(key, { at: now, value: out });
+    return out;
+  } catch (e) {
+    // Ultimate fallback without NLP
+    const safe = (s: string) => (s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s]/g, '').trim();
+    const n = safe(name).replace(/\s+/g, '') || 'user';
+    const w = safe(word).replace(/\s+/g, '');
+    const d = (birthDate || '').replace(/\D/g, '').slice(2, 8);
+    const bases = Array.from(new Set([
+      `${n}${d}`,
+      `${n}_${d}`,
+      `${n}${w}`,
+      `${n}_${w}`,
+      n,
+      w ? `${w}${d}` : ''
+    ].filter(Boolean)));
+    const out = bases
+      .flatMap((b) => [b, `${b}${Math.floor(Math.random()*999)}`, `${b}_${nanoid(4)}`])
+      .flatMap((u) => stylize(u, style))
+      .map((u) => u.replace(/__+/g, '_'))
+      .filter((u) => u.length >= 3 && u.length <= maxLength)
+      .slice(0, count);
+    memoCache.set(key, { at: now, value: out });
+    return out;
   }
-  if (bases.length === 0) bases.push(name.toLowerCase());
-
-  const candidates = new Set<string>();
-  for (const base of bases) {
-    for (const s of stylize(base, style)) {
-      candidates.add(s);
-      candidates.add(`${s}${Math.floor(Math.random() * 999)}`);
-      candidates.add(`${s}_${nanoid(4)}`);
-    }
-  }
-
-  let list = Array.from(candidates)
-    .map((u) => u.replace(/__+/g, '_'))
-    .filter((u) => u.length >= 3 && u.length <= maxLength)
-    .slice(0, count * 5);
-
-  // Heuristic ranking: prefer readable + includes user tokens
-  const tokens = new Set([...extractMeaningfulWords(name), ...extractMeaningfulWords(word)]);
-  let scored = list
-    .map((u) => {
-      const score =
-        (/[a-z]/.test(u) ? 1 : 0) +
-        (/[0-9]/.test(u) ? 0.2 : 0) +
-        ([...tokens].some((t) => u.includes(t)) ? 1 : 0) +
-        (/_/.test(u) ? 0.1 : 0);
-      return { u, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .map((x) => x.u);
-
-  // Apply user filters at the end
-  if (avoidNumbers) {
-    scored = scored.filter((u) => !/[0-9]/.test(u));
-  }
-  if (avoidUnderscore) {
-    scored = scored.filter((u) => !/_/.test(u));
-  }
-
-  const out = Array.from(new Set(scored)).slice(0, count);
-  memoCache.set(key, { at: now, value: out });
-  return out;
 }
 
 
