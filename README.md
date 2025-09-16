@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # UniName - Local NLP Username Generator
 
 A full-stack app that generates unique, meaningful usernames from your name, date of birth, and an optional flavor word. Uses only local, free NLP libraries (no external AI calls).
@@ -44,6 +43,3 @@ Alternatively, build and run locally with Docker:
 docker build -t uniname .
 docker run -p 3001:3001 uniname
 ```
-=======
-# -UniName--Username-Generator--by--vishvendra-ughade
->>>>>>> 643668e674b1f2b081c1f958a230eaec0a0c9989
