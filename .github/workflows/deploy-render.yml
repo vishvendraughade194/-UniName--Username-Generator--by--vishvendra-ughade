@@ -1,0 +1,37 @@
+name: Deploy to Render on push
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Optional: quick typecheck to catch obvious mistakes before deploy
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Typecheck server
+        working-directory: server
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK secret is missing. Add it in GitHub repo settings > Secrets and variables > Actions." >&2
+            exit 1
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
+
+

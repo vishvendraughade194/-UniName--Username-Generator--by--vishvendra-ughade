@@ -1,0 +1,13 @@
+{
+  "name": "uniname-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["server"],
+  "scripts": {
+    "dev": "npm --prefix server run dev",
+    "start": "npm --prefix server run start",
+    "build": "npm --prefix server run build"
+  }
+}
+
+

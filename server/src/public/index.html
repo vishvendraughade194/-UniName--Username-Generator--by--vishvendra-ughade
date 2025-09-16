@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniName - Smart Username Generator</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+      :root { --bg: #0b0f17; --card: #121826; --accent: #6ee7b7; --accent2: #60a5fa; --text:#e5e7eb; --muted:#9ca3af; }
+      *{ box-sizing:border-box }
+      body{ margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: radial-gradient(1200px 600px at 10% -10%, rgba(96,165,250,.2), transparent), radial-gradient(1000px 500px at 90% 10%, rgba(110,231,183,.15), transparent), var(--bg); color:var(--text) }
+      header{ padding:32px 20px; text-align:center }
+      .logo{ font-weight:800; font-size:28px; letter-spacing:.5px }
+      .grid{ display:grid; grid-template-columns: 1fr; gap:18px; max-width:1000px; margin:0 auto; padding:0 20px 40px }
+      @media(min-width:900px){ .grid{ grid-template-columns: 420px 1fr } }
+      .card{ background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); border-radius:16px; padding:20px }
+      label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
+      input, select{ width:100%; padding:12px 14px; border-radius:10px; background:#0f1623; border:1px solid rgba(255,255,255,.08); color:var(--text); outline:none }
+      .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+      button.primary{ width:100%; padding:14px 16px; border:none; border-radius:12px; color:#031316; background:linear-gradient(90deg, var(--accent), var(--accent2)); font-weight:700; letter-spacing:.3px; cursor:pointer }
+      button.ghost{ padding:10px 12px; border:1px solid rgba(255,255,255,.12); background:transparent; color:var(--text); border-radius:10px; cursor:pointer }
+      .results{ display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px }
+      .chip{ background:#0f1623; border:1px dashed rgba(255,255,255,.15); padding:10px 12px; border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:8px }
+      .chip span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+      .hint{ color:var(--muted); font-size:12px }
+      .footer{ text-align:center; color:var(--muted); font-size:12px; padding:24px 0 }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">UniName <span style="color:var(--accent)">●</span> Generator</div>
+    </header>
+    <main class="grid">
+      <section class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
+          <h2 style="margin:0; font-size:18px">Your identity</h2>
+          <button class="ghost" id="randomize">Surprise me</button>
+        </div>
+        <div style="display:grid; gap:12px">
+          <div>
+            <label>Full name</label>
+            <input id="name" placeholder="e.g., Ayesha Khan" />
+          </div>
+          <div class="row">
+            <div>
+              <label>Date of birth</label>
+              <input id="dob" type="date" />
+            </div>
+            <div>
+              <label>Flavor word (optional)</label>
+              <input id="word" placeholder="e.g., galaxy, coder" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Style</label>
+              <select id="style">
+                <option value="smart">Smart</option>
+                <option value="camel">CamelCase</option>
+                <option value="leet">1337</option>
+                <option value="dots">Dotted</option>
+                <option value="plain">Plain</option>
+                <option value="waves">~Waves~</option>
+              </select>
+            </div>
+            <div>
+              <label>How many</label>
+              <select id="count">
+                <option>10</option><option>12</option><option>15</option><option>20</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Max length</label>
+              <input id="maxLength" type="number" min="3" max="24" value="24" />
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; padding-top:18px">
+              <label style="margin:0"><input type="checkbox" id="avoidNumbers" /> Avoid numbers</label>
+              <label style="margin:0"><input type="checkbox" id="avoidUnderscore" /> Avoid underscore</label>
+            </div>
+          </div>
+          <button class="primary" id="generate">Generate usernames</button>
+          <div class="hint">We never send your data to external AI. All NLP is local.</div>
+        </div>
+      </section>
+      <section class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
+          <h2 style="margin:0; font-size:18px">Results</h2>
+          <button class="ghost" id="copyAll">Copy all</button>
+        </div>
+        <div class="results" id="results"></div>
+      </section>
+    </main>
+    <div class="footer">Built with local NLP · No external AI calls</div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const results = $('results');
+
+      function render(list){
+        results.innerHTML = '';
+        list.forEach(u => {
+          const div = document.createElement('div');
+          div.className = 'chip';
+          const span = document.createElement('span');
+          span.textContent = u;
+          const btn = document.createElement('button');
+          btn.className = 'ghost';
+          btn.textContent = 'Copy';
+          btn.onclick = () => navigator.clipboard.writeText(u);
+          div.appendChild(span);
+          div.appendChild(btn);
+          results.appendChild(div);
+        });
+      }
+
+      async function generate(){
+        const payload = {
+          name: $('name').value.trim(),
+          birthDate: $('dob').value || '',
+          word: $('word').value.trim(),
+          style: $('style').value,
+          count: Number($('count').value),
+          maxLength: Number($('maxLength').value) || 24,
+          avoidNumbers: $('avoidNumbers').checked,
+          avoidUnderscore: $('avoidUnderscore').checked,
+        };
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        render(data.usernames || []);
+      }
+
+      // Persist inputs
+      const fields = ['name','dob','word','style','count','maxLength','avoidNumbers','avoidUnderscore'];
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        const saved = localStorage.getItem('uniname:'+id);
+        if (saved !== null) {
+          if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = saved === 'true';
+          else (el as any).value = saved;
+        }
+        el.addEventListener('change', () => {
+          if (el instanceof HTMLInputElement && el.type === 'checkbox') localStorage.setItem('uniname:'+id, String(el.checked));
+          else localStorage.setItem('uniname:'+id, (el as any).value);
+        });
+      });
+
+      $('generate').onclick = generate;
+      $('copyAll').onclick = async () => {
+        const names = [...document.querySelectorAll('.chip span')].map(x => x.textContent);
+        if (names.length) await navigator.clipboard.writeText(names.join('\n'));
+      };
+
+      $('randomize').onclick = () => {
+        const samples = [
+          ['Ayesha Khan','2001-06-15','galaxy'],
+          ['Pranav Iyer','1998-12-03','matrix'],
+          ['Fatima Noor','1999-02-28','quantum'],
+          ['Daniel Cho','2004-09-09','nebula']
+        ];
+        const [n,d,w] = samples[Math.floor(Math.random()*samples.length)];
+        $('name').value = n; $('dob').value = d; $('word').value = w;
+      };
+    </script>
+  </body>
+  </html>
+
+
