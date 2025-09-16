@@ -17,6 +17,14 @@ const inputSchema = z.object({
 
 router.post('/generate', (req, res) => {
   try {
+    // Quick debug path: return stubbed usernames if ?debug=1
+    if (req.query && (req.query.debug === '1' || req.headers['x-debug-test'] === '1')) {
+      return res.json({ usernames: ['TestUser1', 'TestUser2'] });
+    }
+
+    // Log the incoming payload for diagnostics (safe: short fields only)
+    // eslint-disable-next-line no-console
+    console.log('POST /api/generate payload:', req.body);
     const parsed = inputSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
